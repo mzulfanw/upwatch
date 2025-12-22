@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  upwatch:
+    image: ${DOCKERHUB_USERNAME:-mzulfanw}/upwatch:${UPWATCH_TAG:-latest}
+    container_name: upwatch
+    ports:
+      - "${PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      PORT: ${PORT:-8080}
+      DB_PATH: ${DB_PATH:-/data/upwatch.db}
+      ADMIN_USER: ${ADMIN_USER:?set ADMIN_USER in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      SESSION_TTL: ${SESSION_TTL:-24h}
+    volumes:
+      - upwatch-data:/data
+    restart: unless-stopped
+
+volumes:
+  upwatch-data:
