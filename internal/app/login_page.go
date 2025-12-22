@@ -16,31 +16,27 @@ const loginPageHTML = `<!doctype html>
   <style>
     :root {
       color-scheme: light dark;
-      --bg: #1c1916;
-      --bg-2: #221f1b;
-      --surface: #27231f;
-      --surface-2: #181513;
-      --card-border: rgba(255, 255, 255, 0.08);
-      --text: #f2ede7;
-      --muted: #b8aca1;
+      --bg: #141515;
+      --bg-2: #141515;
+      --surface: #202122;
+      --surface-2: #27292a;
+      --text: #f2f2f0;
+      --muted: #b3b3ad;
       --accent: #c9a27d;
       --accent-2: #b9856b;
       --danger: #d77a6a;
-      --shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
     }
     [data-theme="light"] {
       color-scheme: light;
-      --bg: #f4efe9;
-      --bg-2: #e9e1d8;
-      --surface: #fbf7f2;
-      --surface-2: #f1e8de;
-      --card-border: rgba(40, 33, 28, 0.12);
-      --text: #2a241f;
-      --muted: #6f6256;
-      --accent: #b98b63;
-      --accent-2: #c07a66;
-      --danger: #c06355;
-      --shadow: 0 24px 60px rgba(40, 33, 28, 0.12);
+      --bg: #f6f6f4;
+      --bg-2: #ededeb;
+      --surface: #ffffff;
+      --surface-2: #f4f4f2;
+      --text: #242424;
+      --muted: #6f6f6a;
+      --accent: #e99673;
+      --accent-2: #de7c69;
+      --grid: rgba(60, 60, 60, 0.08);
     }
     * { box-sizing: border-box; }
     body {
@@ -98,7 +94,7 @@ const loginPageHTML = `<!doctype html>
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: transform 0.2s ease;
     }
     [data-theme="light"] .btn {
       border-color: rgba(16, 32, 80, 0.12);
@@ -138,7 +134,7 @@ const loginPageHTML = `<!doctype html>
       padding: 0.7rem 0.8rem;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      background: rgba(13, 16, 45, 0.7);
+      background: var(--bg);
       color: var(--text);
       margin-bottom: 1rem;
     }
@@ -155,7 +151,6 @@ const loginPageHTML = `<!doctype html>
       color: #0b1029;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 12px 24px rgba(91, 226, 255, 0.25);
     }
     .error {
       margin-top: 1rem;

@@ -15,37 +15,33 @@ const statusPageHTML = `<!doctype html>
   <title>Upwatch Status</title>
   <style>
     :root {
-      color-scheme: light dark;
-      --bg: #1c1916;
-      --bg-2: #221f1b;
-      --surface: #27231f;
-      --surface-2: #181513;
-      --card-border: rgba(255, 255, 255, 0.08);
-      --text: #f2ede7;
-      --muted: #b8aca1;
-      --up: #7fb58a;
-      --down: #d77a6a;
-      --unknown: #d9b56d;
-      --accent: #c9a27d;
-      --accent-2: #b9856b;
-      --danger: #d77a6a;
-      --shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-      --grid: rgba(255, 255, 255, 0.08);
+      color-scheme: dark;
+      --bg: #141515;
+      --bg-2: #1b1c1c;
+      --surface: #202122;
+      --surface-2: #27292a;
+      --text: #f2f2f0;
+      --muted: #b3b3ad;
+      --up: #7fc7a4;
+      --down: #f08a7c;
+      --unknown: #f2c27d;
+      --accent: #f0a07a;
+      --accent-2: #e67f6a;
+      --danger: #f08a7c;
+      --grid: rgba(255, 255, 255, 0.06);
     }
     [data-theme="light"] {
       color-scheme: light;
-      --bg: #f4efe9;
-      --bg-2: #e9e1d8;
-      --surface: #fbf7f2;
-      --surface-2: #f1e8de;
-      --card-border: rgba(40, 33, 28, 0.12);
-      --text: #2a241f;
-      --muted: #6f6256;
-      --accent: #b98b63;
-      --accent-2: #c07a66;
-      --danger: #c06355;
-      --shadow: 0 24px 60px rgba(40, 33, 28, 0.12);
-      --grid: rgba(40, 33, 28, 0.08);
+      --bg: #f6f6f4;
+      --bg-2: #ededeb;
+      --surface: #ffffff;
+      --surface-2: #f4f4f2;
+      --text: #242424;
+      --muted: #6f6f6a;
+      --accent: #e99673;
+      --accent-2: #de7c69;
+      --danger: #e26f63;
+      --grid: rgba(60, 60, 60, 0.08);
     }
     * { box-sizing: border-box; }
     body {
@@ -108,7 +104,7 @@ const statusPageHTML = `<!doctype html>
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      transition: transform 0.2s ease, border-color 0.2s ease;
     }
     .btn-ghost {
       background: rgba(255, 255, 255, 0.08);
