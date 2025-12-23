@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -120,7 +121,101 @@ func (a *App) handleMonitorEvents(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func (a *App) buildStatusPayload() (StatusResponse, error) {
+func (a *App) handleListIncidents(w http.ResponseWriter, r *http.Request) {
+	limit := parseLimit(r.URL.Query().Get("limit"))
+	if limit > maxIncidentsLimit {
+		limit = maxIncidentsLimit
+	}
+	incidents, err := listIncidents(a.db, limit)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load incidents")
+		return
+	}
+	resp := make([]IncidentResponse, 0, len(incidents))
+	for _, incident := range incidents {
+		resp = append(resp, incidentResponse(incident))
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) handleCreateIncident(w http.ResponseWriter, r *http.Request) {
+	var input IncidentInput
+	if err := decodeJSON(r, &input); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	incident, err := createIncident(a.db, input)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, incidentResponse(incident))
+}
+
+func (a *App) handleUpdateIncident(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid incident id")
+		return
+	}
+	var input IncidentUpdate
+	if err := decodeJSON(r, &input); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	incident, err := updateIncident(a.db, id, input)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "incident not found")
+			return
+		}
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, incidentResponse(incident))
+}
+
+func (a *App) handleDeleteIncident(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid incident id")
+		return
+	}
+	if err := deleteIncident(a.db, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "incident not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to delete incident")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func (a *App) handleGetSettings(w http.ResponseWriter, r *http.Request) {
+	settings, err := getSettings(a.db)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load settings")
+		return
+	}
+	writeJSON(w, http.StatusOK, settingsResponse(settings))
+}
+
+func (a *App) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
+	var input SettingsUpdate
+	if err := decodeJSON(r, &input); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	settings, err := updateSettings(a.db, input)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, settingsResponse(settings))
+}
+
+func (a *App) buildStatusPayload(includeHistory bool) (StatusResponse, error) {
 	monitors, err := listMonitors(a.db)
 	if err != nil {
 		return StatusResponse{}, err
@@ -138,15 +233,23 @@ func (a *App) buildStatusPayload() (StatusResponse, error) {
 		}
 		respMonitors = append(respMonitors, monitorResponse(monitor))
 	}
-	return StatusResponse{
+	resp := StatusResponse{
 		Counts:   counts,
 		Monitors: respMonitors,
 		Updated:  time.Now().UTC().Format(time.RFC3339),
-	}, nil
+	}
+	if includeHistory {
+		history, err := a.buildStatusHistory(monitors)
+		if err != nil {
+			return StatusResponse{}, err
+		}
+		resp.History = history
+	}
+	return resp, nil
 }
 
 func (a *App) handleStatus(w http.ResponseWriter, r *http.Request) {
-	payload, err := a.buildStatusPayload()
+	payload, err := a.buildStatusPayload(true)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to load status")
 		return
@@ -164,34 +267,74 @@ func (a *App) handleStatusStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
+	w.WriteHeader(http.StatusOK)
 
-	send := func() {
-		payload, err := a.buildStatusPayload()
+	write := func(format string, args ...any) bool {
+		if _, err := fmt.Fprintf(w, format, args...); err != nil {
+			return false
+		}
+		flusher.Flush()
+		return true
+	}
+
+	send := func(includeHistory bool) bool {
+		payload, err := a.buildStatusPayload(includeHistory)
 		if err != nil {
-			fmt.Fprintf(w, "event: error\ndata: %q\n\n", err.Error())
-			flusher.Flush()
-			return
+			return write("event: error\ndata: %q\n\n", err.Error())
 		}
 		data, err := json.Marshal(payload)
 		if err != nil {
-			fmt.Fprintf(w, "event: error\ndata: %q\n\n", err.Error())
-			flusher.Flush()
-			return
+			return write("event: error\ndata: %q\n\n", err.Error())
 		}
-		fmt.Fprintf(w, "data: %s\n\n", data)
-		flusher.Flush()
+		return write("data: %s\n\n", data)
 	}
 
-	send()
-	ticker := time.NewTicker(15 * time.Second)
-	defer ticker.Stop()
+	if !write("retry: 5000\n\n") {
+		return
+	}
+	if !send(true) {
+		return
+	}
+
+	statusTicker := time.NewTicker(15 * time.Second)
+	keepAliveTicker := time.NewTicker(10 * time.Second)
+	defer statusTicker.Stop()
+	defer keepAliveTicker.Stop()
 
 	for {
 		select {
 		case <-r.Context().Done():
 			return
-		case <-ticker.C:
-			send()
+		case <-statusTicker.C:
+			if !send(false) {
+				return
+			}
+		case <-keepAliveTicker.C:
+			if !write(": ping\n\n") {
+				return
+			}
 		}
 	}
+}
+
+func (a *App) buildStatusHistory(monitors []Monitor) (map[string][]StatusHistoryPoint, error) {
+	history := make(map[string][]StatusHistoryPoint, len(monitors))
+	for _, monitor := range monitors {
+		events, err := listEvents(a.db, monitor.ID, statusHistoryLimit)
+		if err != nil {
+			return nil, err
+		}
+		points := make([]StatusHistoryPoint, 0, len(events))
+		for i := len(events) - 1; i >= 0; i-- {
+			event := events[i]
+			if event.LatencyMs.Valid {
+				value := int(event.LatencyMs.Int64)
+				points = append(points, StatusHistoryPoint{V: &value})
+			} else {
+				points = append(points, StatusHistoryPoint{V: nil})
+			}
+		}
+		history[strconv.FormatInt(monitor.ID, 10)] = points
+	}
+	return history, nil
 }

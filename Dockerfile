@@ -16,6 +16,7 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=builder /out/upwatch /app/upwatch
+COPY --from=builder /src/assets /app/assets
 
 EXPOSE 8080
 ENV PORT=8080

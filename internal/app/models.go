@@ -6,6 +6,13 @@ const (
 	defaultIntervalSec = 60
 	defaultTimeoutSec  = 10
 	maxEventsLimit     = 1000
+	statusHistoryLimit = 40
+	maxIncidentsLimit  = 100
+	defaultIncidentStatus = "investigating"
+	defaultBrandName   = "Upwatch Status"
+	defaultBrandTagline = "Public status feed for tracked services."
+	defaultStatusTitle = "Current system health"
+	defaultStatusSubtitle = "Updated in real time from the stream."
 )
 
 type Monitor struct {
@@ -79,6 +86,7 @@ type CheckEventResponse struct {
 type StatusResponse struct {
 	Counts   StatusCounts      `json:"counts"`
 	Monitors []MonitorResponse `json:"monitors"`
+	History  map[string][]StatusHistoryPoint `json:"history,omitempty"`
 	Updated  string            `json:"updated_at"`
 }
 
@@ -87,4 +95,69 @@ type StatusCounts struct {
 	Down    int `json:"down"`
 	Unknown int `json:"unknown"`
 	Total   int `json:"total"`
+}
+
+type StatusHistoryPoint struct {
+	V *int `json:"v"`
+}
+
+type Settings struct {
+	BrandName      string
+	BrandTagline   string
+	StatusTitle   string
+	StatusSubtitle string
+	UpdatedAt      int64
+}
+
+type SettingsUpdate struct {
+	BrandName      *string `json:"brand_name"`
+	BrandTagline   *string `json:"brand_tagline"`
+	StatusTitle   *string `json:"status_title"`
+	StatusSubtitle *string `json:"status_subtitle"`
+}
+
+type SettingsResponse struct {
+	BrandName      string `json:"brand_name"`
+	BrandTagline   string `json:"brand_tagline"`
+	StatusTitle   string `json:"status_title"`
+	StatusSubtitle string `json:"status_subtitle"`
+	UpdatedAt      string `json:"updated_at"`
+}
+
+type Incident struct {
+	ID         int64
+	Title      string
+	Status     string
+	Message    string
+	StartedAt  int64
+	ResolvedAt sql.NullInt64
+	CreatedAt  int64
+	UpdatedAt  int64
+}
+
+type IncidentInput struct {
+	Title      string `json:"title"`
+	Status     string `json:"status"`
+	Message    string `json:"message"`
+	StartedAt  string `json:"started_at"`
+	ResolvedAt string `json:"resolved_at"`
+}
+
+type IncidentUpdate struct {
+	Title      *string `json:"title"`
+	Status     *string `json:"status"`
+	Message    *string `json:"message"`
+	StartedAt  *string `json:"started_at"`
+	ResolvedAt *string `json:"resolved_at"`
+}
+
+type IncidentResponse struct {
+	ID         int64   `json:"id"`
+	Title      string  `json:"title"`
+	Status     string  `json:"status"`
+	Message    string  `json:"message"`
+	StartedAt  string  `json:"started_at"`
+	ResolvedAt *string `json:"resolved_at"`
+	CreatedAt  string  `json:"created_at"`
+	UpdatedAt  string  `json:"updated_at"`
 }

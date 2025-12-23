@@ -35,6 +35,29 @@ func eventResponse(e CheckEvent) CheckEventResponse {
 	}
 }
 
+func incidentResponse(i Incident) IncidentResponse {
+	return IncidentResponse{
+		ID:         i.ID,
+		Title:      i.Title,
+		Status:     i.Status,
+		Message:    i.Message,
+		StartedAt:  time.Unix(i.StartedAt, 0).UTC().Format(time.RFC3339),
+		ResolvedAt: nullTime(i.ResolvedAt),
+		CreatedAt:  time.Unix(i.CreatedAt, 0).UTC().Format(time.RFC3339),
+		UpdatedAt:  time.Unix(i.UpdatedAt, 0).UTC().Format(time.RFC3339),
+	}
+}
+
+func settingsResponse(s Settings) SettingsResponse {
+	return SettingsResponse{
+		BrandName:      s.BrandName,
+		BrandTagline:   s.BrandTagline,
+		StatusTitle:    s.StatusTitle,
+		StatusSubtitle: s.StatusSubtitle,
+		UpdatedAt:      time.Unix(s.UpdatedAt, 0).UTC().Format(time.RFC3339),
+	}
+}
+
 func nullInt(value sql.NullInt64) *int {
 	if !value.Valid {
 		return nil

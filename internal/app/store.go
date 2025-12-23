@@ -38,6 +38,25 @@ CREATE TABLE IF NOT EXISTS check_events (
 	FOREIGN KEY(monitor_id) REFERENCES monitors(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_check_events_monitor ON check_events(monitor_id, checked_at DESC);
+CREATE TABLE IF NOT EXISTS incidents (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	title TEXT NOT NULL,
+	status TEXT NOT NULL,
+	message TEXT NOT NULL,
+	started_at INTEGER NOT NULL,
+	resolved_at INTEGER,
+	created_at INTEGER NOT NULL,
+	updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_incidents_started ON incidents(started_at DESC);
+CREATE TABLE IF NOT EXISTS settings (
+	id INTEGER PRIMARY KEY CHECK (id = 1),
+	brand_name TEXT NOT NULL,
+	brand_tagline TEXT NOT NULL,
+	status_title TEXT NOT NULL,
+	status_subtitle TEXT NOT NULL,
+	updated_at INTEGER NOT NULL
+);
 `
 	_, err := db.Exec(schema)
 	return err

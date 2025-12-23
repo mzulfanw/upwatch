@@ -13,7 +13,21 @@ const statusPageHTML = `<!doctype html>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Upwatch Status</title>
+  <meta name="description" content="Live system status and incident history." />
+  <link rel="canonical" href="" id="canonicalLink" />
+  <meta property="og:title" content="Upwatch Status" />
+  <meta property="og:description" content="Live system status and incident history." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Upwatch" />
+  <meta property="og:url" content="" id="ogUrl" />
+  <meta name="twitter:title" content="Upwatch Status" />
+  <meta name="twitter:description" content="Live system status and incident history." />
+  <link rel="icon" type="image/png" href="/assets/upwatch.png" />
+  <meta property="og:image" content="/assets/upwatch.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="/assets/upwatch.png" />
   <style>
+    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
     :root {
       color-scheme: dark;
       --bg: #141515;
@@ -47,7 +61,7 @@ const statusPageHTML = `<!doctype html>
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: "Space Grotesk", "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       color: var(--text);
       background: var(--bg);
       position: relative;
@@ -76,17 +90,36 @@ const statusPageHTML = `<!doctype html>
       flex-wrap: wrap;
     }
     .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand-logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .brand-text {
       display: grid;
       gap: 0.35rem;
     }
     .brand-mark {
       font-size: clamp(2rem, 4vw, 3.2rem);
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.01em;
     }
     .brand-sub {
       color: var(--muted);
-      font-size: 0.95rem;
+      font-size: 0.85rem;
+      line-height: 1.6;
     }
     .actions {
       display: flex;
@@ -106,6 +139,12 @@ const statusPageHTML = `<!doctype html>
       text-decoration: none;
       transition: transform 0.2s ease, border-color 0.2s ease;
     }
+    .btn-icon {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      position: relative;
+    }
     .btn-ghost {
       background: rgba(255, 255, 255, 0.08);
       color: var(--text);
@@ -117,7 +156,40 @@ const statusPageHTML = `<!doctype html>
     }
     .btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+    }
+    .theme-icon {
+      width: 18px;
+      height: 18px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(1) rotate(0deg);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .theme-icon.sun {
+      opacity: 1;
+    }
+    .theme-icon.moon {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8) rotate(35deg);
+    }
+    [data-theme="light"] .theme-icon.sun {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8) rotate(-35deg);
+    }
+    [data-theme="light"] .theme-icon.moon {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
     }
     .panel {
       background: var(--surface);
@@ -132,13 +204,19 @@ const statusPageHTML = `<!doctype html>
     .panel + .panel {
       margin-top: 2.5rem;
     }
+    section + section {
+      margin-top: 2.5rem;
+    }
     .panel-title {
-      margin: 0 0 0.4rem;
-      font-size: 1.4rem;
+      margin: 0 0 0.5rem;
+      font-size: 1.3rem;
+      line-height: 1.4;
     }
     .panel-subtitle {
-      margin: 0;
+      margin: 0 0 1.25rem;
       color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
     }
     .eyebrow {
       text-transform: uppercase;
@@ -150,7 +228,7 @@ const statusPageHTML = `<!doctype html>
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 1rem;
-      margin-top: 1.6rem;
+      margin-top: 0.5rem;
     }
     .stat-card {
       background: rgba(7, 10, 30, 0.55);
@@ -179,7 +257,7 @@ const statusPageHTML = `<!doctype html>
       display: grid;
       gap: 1.25rem;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      margin-top: 1.75rem;
+      margin-top: 0;
     }
     .card {
       background: rgba(13, 16, 45, 0.85);
@@ -253,6 +331,7 @@ const statusPageHTML = `<!doctype html>
       gap: 1.25rem;
       flex-wrap: wrap;
       margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
     }
     .section-title {
       margin: 0;
@@ -260,6 +339,7 @@ const statusPageHTML = `<!doctype html>
     .muted {
       color: var(--muted);
       margin: 0.25rem 0 0;
+      line-height: 1.5;
     }
     .chip {
       padding: 0.35rem 0.75rem;
@@ -271,6 +351,96 @@ const statusPageHTML = `<!doctype html>
     [data-theme="light"] .chip {
       background: rgba(16, 32, 80, 0.06);
       border-color: rgba(16, 32, 80, 0.12);
+    }
+    .incident-grid {
+      margin-top: 0;
+    }
+    .card.incident-card {
+      border: 1px solid rgba(240, 138, 124, 0.55);
+    }
+    [data-theme="light"] .card.incident-card {
+      border: 1px solid rgba(226, 111, 99, 0.55);
+    }
+    .incident-card::after {
+      background: radial-gradient(circle at top right, rgba(240, 138, 124, 0.18), transparent 55%);
+    }
+    .incident-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .incident-title {
+      font-weight: 600;
+      font-size: 1.05rem;
+      margin: 0;
+    }
+    .incident-meta {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 0.35rem;
+    }
+    .incident-message {
+      margin: 0.75rem 0 0;
+      line-height: 1.5;
+    }
+    .incident-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      border: 1px solid transparent;
+    }
+    .incident-badge.investigating {
+      color: var(--down);
+      border-color: rgba(240, 138, 124, 0.45);
+      background: rgba(240, 138, 124, 0.12);
+    }
+    .incident-badge.identified {
+      color: var(--down);
+      border-color: rgba(240, 138, 124, 0.45);
+      background: rgba(240, 138, 124, 0.12);
+    }
+    .incident-badge.monitoring {
+      color: var(--unknown);
+      border-color: rgba(242, 194, 125, 0.45);
+      background: rgba(242, 194, 125, 0.12);
+    }
+    .incident-badge.resolved {
+      color: var(--up);
+      border-color: rgba(127, 199, 164, 0.45);
+      background: rgba(127, 199, 164, 0.12);
+    }
+    .incident-badge.maintenance,
+    .incident-badge.scheduled {
+      color: var(--unknown);
+      border-color: rgba(242, 194, 125, 0.45);
+      background: rgba(242, 194, 125, 0.12);
+    }
+    .incident-empty {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .footer {
+      margin-top: 3.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .footer-link {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      padding-bottom: 0.1rem;
+    }
+    .footer-link:hover {
+      border-bottom-color: currentColor;
     }
 
     @keyframes fadeUp {
@@ -296,18 +466,39 @@ const statusPageHTML = `<!doctype html>
   <div class="shell">
     <div class="topbar">
       <div class="brand">
-        <div class="brand-mark">Upwatch Status</div>
-        <div class="brand-sub">Public status feed for tracked services.</div>
+        <div class="brand-logo">
+          <img src="/assets/upwatch.png" alt="Upwatch logo" />
+        </div>
+        <div class="brand-text">
+          <div class="brand-mark" id="brandName">Upwatch Status</div>
+          <div class="brand-sub" id="brandTagline">Public status feed for tracked services.</div>
+        </div>
       </div>
       <div class="actions">
-        <button class="btn btn-ghost" id="themeToggle" type="button">Light mode</button>
+        <button class="btn btn-ghost btn-icon" id="themeToggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">
+          <svg class="theme-icon sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8" />
+            <line x1="12" y1="2.5" x2="12" y2="5.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="12" y1="18.8" x2="12" y2="21.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="2.5" y1="12" x2="5.2" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="18.8" y1="12" x2="21.5" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="4.6" y1="4.6" x2="6.6" y2="6.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="17.4" y1="17.4" x2="19.4" y2="19.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="4.6" y1="19.4" x2="6.6" y2="17.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="17.4" y1="6.6" x2="19.4" y2="4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          <svg class="theme-icon moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M21 14a8.5 8.5 0 1 1-11-11 7 7 0 0 0 11 11z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span class="sr-only">Toggle theme</span>
+        </button>
       </div>
     </div>
 
     <section class="panel">
       <div class="eyebrow">Live overview</div>
-      <h2 class="panel-title">Current system health</h2>
-      <p class="panel-subtitle">Updated in real time from the stream.</p>
+      <h2 class="panel-title" id="statusTitle">Current system health</h2>
+      <p class="panel-subtitle" id="statusSubtitle">Updated in real time from the stream.</p>
       <div class="stat-grid">
         <div class="stat-card">
           <div class="stat-label">Total monitors</div>
@@ -339,6 +530,17 @@ const statusPageHTML = `<!doctype html>
       </div>
       <div class="grid" id="monitorGrid"></div>
     </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Past incidents</h2>
+          <p class="muted">Maintenance windows and resolved disruptions.</p>
+        </div>
+      </div>
+      <div class="grid incident-grid" id="incidentList"></div>
+    </section>
+    <footer class="footer">Powered by <a class="footer-link" id="footerBrandLink" href="https://github.com/mzulfanw/upwatch" target="_blank" rel="noopener">Upwatch</a></footer>
   </div>
 
   <script>
@@ -346,6 +548,19 @@ const statusPageHTML = `<!doctype html>
     const updatedAtEl = document.getElementById("updatedAt");
     const streamStatusEl = document.getElementById("streamStatus");
     const themeToggle = document.getElementById("themeToggle");
+    const incidentListEl = document.getElementById("incidentList");
+    const brandNameEl = document.getElementById("brandName");
+    const brandTaglineEl = document.getElementById("brandTagline");
+    const statusTitleEl = document.getElementById("statusTitle");
+    const statusSubtitleEl = document.getElementById("statusSubtitle");
+    const footerBrandEl = document.getElementById("footerBrandLink");
+    const canonicalLinkEl = document.getElementById("canonicalLink");
+    const ogUrlEl = document.getElementById("ogUrl");
+    const metaDescriptionEl = document.querySelector('meta[name="description"]');
+    const ogTitleEl = document.querySelector('meta[property="og:title"]');
+    const ogDescriptionEl = document.querySelector('meta[property="og:description"]');
+    const twitterTitleEl = document.querySelector('meta[name="twitter:title"]');
+    const twitterDescriptionEl = document.querySelector('meta[name="twitter:description"]');
 
     const countTotalEl = document.getElementById("countTotal");
     const countUpEl = document.getElementById("countUp");
@@ -365,9 +580,16 @@ const statusPageHTML = `<!doctype html>
       return value || fallback;
     };
 
+    const updateThemeToggle = (theme) => {
+      const next = theme === "light" ? "dark" : "light";
+      const label = "Switch to " + next + " mode";
+      themeToggle.setAttribute("aria-label", label);
+      themeToggle.setAttribute("title", label);
+    };
+
     const setTheme = (theme) => {
       document.documentElement.setAttribute("data-theme", theme);
-      themeToggle.textContent = theme === "light" ? "Dark mode" : "Light mode";
+      updateThemeToggle(theme);
       localStorage.setItem("upwatch-theme", theme);
       requestAnimationFrame(drawAllSparklines);
     };
@@ -394,10 +616,83 @@ const statusPageHTML = `<!doctype html>
       return value + " ms";
     };
 
+    const setText = (el, value) => {
+      if (!el || value === undefined || value === null) return;
+      const trimmed = String(value).trim();
+      if (trimmed === "") {
+        el.textContent = "";
+        el.style.display = "none";
+        return;
+      }
+      el.textContent = trimmed;
+      el.style.display = "";
+    };
+
+    const setMeta = (el, value) => {
+      if (!el || !value) return;
+      el.setAttribute("content", value);
+    };
+
+    const updateMeta = (title, description) => {
+      if (title) {
+        document.title = title;
+        setMeta(ogTitleEl, title);
+        setMeta(twitterTitleEl, title);
+      }
+      if (description) {
+        setMeta(metaDescriptionEl, description);
+        setMeta(ogDescriptionEl, description);
+        setMeta(twitterDescriptionEl, description);
+      }
+    };
+
+    const applySettings = (settings) => {
+      if (!settings) return;
+      setText(brandNameEl, settings.brand_name);
+      setText(brandTaglineEl, settings.brand_tagline);
+      setText(statusTitleEl, settings.status_title);
+      setText(statusSubtitleEl, settings.status_subtitle);
+      const name = settings.brand_name && String(settings.brand_name).trim() !== ""
+        ? settings.brand_name.trim()
+        : "Upwatch Status";
+      const description = settings.brand_tagline && String(settings.brand_tagline).trim() !== ""
+        ? settings.brand_tagline.trim()
+        : "Live system status and incident history.";
+      updateMeta(name, description);
+      if (footerBrandEl) {
+        footerBrandEl.textContent = name;
+      }
+    };
+
+    const loadSettings = async () => {
+      try {
+        const response = await fetch("/api/settings");
+        if (!response.ok) {
+          return;
+        }
+        const settings = await response.json();
+        applySettings(settings);
+      } catch (err) {
+      }
+    };
+
     const statusLabel = (status) => {
       if (status === "up") return "Up";
       if (status === "down") return "Down";
       return "Unknown";
+    };
+
+    const incidentStatusLabel = (status) => {
+      if (!status) return "Unknown";
+      return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
+    const incidentWindow = (incident) => {
+      const started = formatTime(incident.started_at);
+      if (incident.resolved_at) {
+        return "Started " + started + " · Resolved " + formatTime(incident.resolved_at);
+      }
+      return "Started " + started + " · Ongoing";
     };
 
     const setupCanvas = (canvas) => {
@@ -465,6 +760,67 @@ const statusPageHTML = `<!doctype html>
         gridEl.appendChild(card);
       });
       requestAnimationFrame(drawAllSparklines);
+    };
+
+    const renderIncidents = (incidents) => {
+      incidentListEl.innerHTML = "";
+      if (!incidents || incidents.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "incident-empty";
+        empty.textContent = "No incidents reported yet.";
+        incidentListEl.appendChild(empty);
+        return;
+      }
+      incidents.forEach((incident) => {
+        const card = document.createElement("div");
+        card.className = "card incident-card";
+
+        const top = document.createElement("div");
+        top.className = "incident-top";
+
+        const details = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "incident-title";
+        title.textContent = incident.title || "Untitled incident";
+        const meta = document.createElement("div");
+        meta.className = "incident-meta";
+        meta.textContent = incidentWindow(incident);
+        details.appendChild(title);
+        details.appendChild(meta);
+
+        const badge = document.createElement("div");
+        const statusClass = incident.status ? incident.status.toLowerCase() : "unknown";
+        badge.className = "incident-badge " + statusClass;
+        badge.textContent = incidentStatusLabel(statusClass);
+
+        top.appendChild(details);
+        top.appendChild(badge);
+
+        const message = document.createElement("div");
+        message.className = "incident-message";
+        message.textContent = incident.message || "";
+
+        card.appendChild(top);
+        card.appendChild(message);
+        incidentListEl.appendChild(card);
+      });
+    };
+
+    const loadIncidents = async () => {
+      try {
+        const response = await fetch("/api/incidents?limit=20");
+        if (!response.ok) {
+          throw new Error("bad response");
+        }
+        const incidents = await response.json();
+        renderIncidents(incidents);
+      } catch (err) {
+        incidentListEl.innerHTML = "";
+        const empty = document.createElement("div");
+        empty.className = "incident-empty";
+        empty.textContent = "Unable to load incidents.";
+        incidentListEl.appendChild(empty);
+      }
     };
 
     const drawSparkline = (canvas, series, status) => {
@@ -565,30 +921,53 @@ const statusPageHTML = `<!doctype html>
     const applyStatus = (data) => {
       state.monitors = data.monitors || [];
       updateCounts(state.monitors);
-      updateHistory(state.monitors);
+      if (data.history) {
+        state.history = data.history;
+      } else {
+        updateHistory(state.monitors);
+      }
       renderMonitors(state.monitors);
       updatedAtEl.textContent = "Updated: " + formatTime(data.updated_at);
     };
+
+    let streamSource = null;
+    let streamTimer = null;
+    const streamRetryMs = 5000;
 
     const startStream = () => {
       if (!("EventSource" in window)) {
         streamStatusEl.textContent = "Stream: unsupported";
         return;
       }
+      if (streamTimer) {
+        clearTimeout(streamTimer);
+        streamTimer = null;
+      }
+      if (streamSource) {
+        streamSource.close();
+        streamSource = null;
+      }
       streamStatusEl.textContent = "Stream: connecting";
-      const source = new EventSource("/api/status/stream");
-      source.onopen = () => {
+      streamSource = new EventSource("/api/status/stream");
+      streamSource.onopen = () => {
         streamStatusEl.textContent = "Stream: live";
       };
-      source.onmessage = (event) => {
+      streamSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           applyStatus(data);
         } catch (err) {
         }
       };
-      source.onerror = () => {
+      streamSource.onerror = () => {
         streamStatusEl.textContent = "Stream: offline";
+        if (streamSource) {
+          streamSource.close();
+          streamSource = null;
+        }
+        if (!streamTimer) {
+          streamTimer = window.setTimeout(startStream, streamRetryMs);
+        }
       };
     };
 
@@ -602,7 +981,18 @@ const statusPageHTML = `<!doctype html>
     });
 
     initTheme();
+    const pageUrl = window.location.origin + window.location.pathname;
+    if (canonicalLinkEl) {
+      canonicalLinkEl.setAttribute("href", pageUrl);
+    }
+    if (ogUrlEl) {
+      ogUrlEl.setAttribute("content", pageUrl);
+    }
+    loadSettings();
+    window.setInterval(loadSettings, 60000);
     startStream();
+    loadIncidents();
+    window.setInterval(loadIncidents, 60000);
   </script>
 </body>
 </html>`
