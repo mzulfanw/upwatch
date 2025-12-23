@@ -12,6 +12,7 @@ type App struct {
 	checker  *Checker
 	auth     AuthConfig
 	sessions *SessionManager
+	notifier Notifier
 }
 
 func New(db *sql.DB, auth AuthConfig) *App {
@@ -42,6 +43,11 @@ func (a *App) StartMonitors() error {
 	}
 	a.checker.StartAll(monitors)
 	return nil
+}
+
+func (a *App) SetNotifier(notifier Notifier) {
+	a.notifier = notifier
+	a.checker.SetNotifier(notifier)
 }
 
 func (a *App) Router() *mux.Router {

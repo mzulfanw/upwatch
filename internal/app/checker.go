@@ -16,13 +16,17 @@ type Checker struct {
 	client  *http.Client
 	mu      sync.Mutex
 	runners map[int64]context.CancelFunc
+	statusMu   sync.Mutex
+	lastStatus map[int64]string
+	notifier   Notifier
 }
 
 func NewChecker(db *sql.DB) *Checker {
 	return &Checker{
-		db:      db,
-		client:  &http.Client{},
-		runners: make(map[int64]context.CancelFunc),
+		db:         db,
+		client:     &http.Client{},
+		runners:    make(map[int64]context.CancelFunc),
+		lastStatus: make(map[int64]string),
 	}
 }
 
@@ -42,6 +46,7 @@ func (c *Checker) StartMonitor(monitor Monitor) {
 	c.runners[monitor.ID] = cancel
 	c.mu.Unlock()
 
+	c.setLastStatus(monitor.ID, normalizeStatus(monitor.Status))
 	go c.runMonitor(ctx, monitor)
 }
 
@@ -55,6 +60,7 @@ func (c *Checker) StopMonitor(id int64) {
 	if ok {
 		cancel()
 	}
+	c.clearLastStatus(id)
 }
 
 func (c *Checker) runMonitor(ctx context.Context, monitor Monitor) {
@@ -109,5 +115,76 @@ func (c *Checker) checkOnce(monitor Monitor) {
 	}
 	if err := recordCheck(c.db, monitor.ID, success, statusCode, latencyMs, errMsg); err != nil {
 		log.Printf("monitor %d record: %v", monitor.ID, err)
+		return
+	}
+
+	prevStatus := c.getLastStatus(monitor.ID)
+	newStatus := "down"
+	if success {
+		newStatus = "up"
+	}
+	c.setLastStatus(monitor.ID, newStatus)
+	c.notifyIfChanged(monitor, prevStatus, newStatus, statusCode, latencyMs, errMsg)
+}
+
+func (c *Checker) SetNotifier(notifier Notifier) {
+	c.notifier = notifier
+}
+
+func (c *Checker) notifyIfChanged(monitor Monitor, prevStatus, newStatus string, statusCode, latencyMs int, errMsg string) {
+	if c.notifier == nil {
+		return
+	}
+	if newStatus == prevStatus {
+		return
+	}
+	if newStatus == "up" && prevStatus != "down" {
+		return
+	}
+	event := MonitorNotification{
+		MonitorID:  monitor.ID,
+		Name:       monitor.Name,
+		URL:        monitor.URL,
+		Method:     monitor.Method,
+		Status:     newStatus,
+		PrevStatus: prevStatus,
+		CheckedAt:  time.Now(),
+		StatusCode: statusCode,
+		LatencyMs:  latencyMs,
+		Error:      errMsg,
+	}
+	if err := c.notifier.Notify(event); err != nil {
+		log.Printf("monitor %d notify: %v", monitor.ID, err)
+	}
+}
+
+func (c *Checker) getLastStatus(id int64) string {
+	c.statusMu.Lock()
+	defer c.statusMu.Unlock()
+	status, ok := c.lastStatus[id]
+	if !ok || status == "" {
+		return "unknown"
+	}
+	return status
+}
+
+func (c *Checker) setLastStatus(id int64, status string) {
+	c.statusMu.Lock()
+	c.lastStatus[id] = normalizeStatus(status)
+	c.statusMu.Unlock()
+}
+
+func (c *Checker) clearLastStatus(id int64) {
+	c.statusMu.Lock()
+	delete(c.lastStatus, id)
+	c.statusMu.Unlock()
+}
+
+func normalizeStatus(status string) string {
+	switch status {
+	case "up", "down", "unknown":
+		return status
+	default:
+		return "unknown"
 	}
 }

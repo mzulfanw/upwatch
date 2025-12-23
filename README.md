@@ -49,6 +49,14 @@ Environment variables:
 - `ADMIN_USER` (required)
 - `ADMIN_PASSWORD` (required)
 - `SESSION_TTL` (default `24h`)
+- `SMTP_HOST` (optional, enable email notifications)
+- `SMTP_PORT` (default `587`)
+- `SMTP_USERNAME`
+- `SMTP_PASSWORD`
+- `SMTP_FROM` (defaults to `SMTP_USERNAME`)
+- `SMTP_TO` (comma-separated list)
+
+Email notifications trigger when a monitor goes down and when it recovers.
 
 ## Settings page
 Open `http://localhost:8080/settings` after login to update:

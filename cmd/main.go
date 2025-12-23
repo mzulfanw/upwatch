@@ -40,6 +40,12 @@ func main() {
 		CookieName: "upwatch_session",
 		SessionTTL: sessionTTL,
 	})
+	if notifier, err := buildEmailNotifier(); err != nil {
+		log.Printf("email notifications disabled: %v", err)
+	} else if notifier != nil {
+		application.SetNotifier(notifier)
+		log.Printf("email notifications enabled")
+	}
 	if err := application.StartMonitors(); err != nil {
 		log.Fatalf("load monitors: %v", err)
 	}
@@ -83,4 +89,32 @@ func getenvDuration(key string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return duration
+}
+
+func buildEmailNotifier() (app.Notifier, error) {
+	host := strings.TrimSpace(os.Getenv("SMTP_HOST"))
+	if host == "" {
+		return nil, nil
+	}
+	to := app.ParseEmailList(os.Getenv("SMTP_TO"))
+	if len(to) == 0 {
+		return nil, nil
+	}
+	port := getenv("SMTP_PORT", "587")
+	username := strings.TrimSpace(os.Getenv("SMTP_USERNAME"))
+	password := strings.TrimSpace(os.Getenv("SMTP_PASSWORD"))
+	from := strings.TrimSpace(os.Getenv("SMTP_FROM"))
+	if from == "" {
+		from = username
+	}
+
+	cfg := app.EmailConfig{
+		Host:     host,
+		Port:     port,
+		Username: username,
+		Password: password,
+		From:     from,
+		To:       to,
+	}
+	return app.NewEmailNotifier(cfg)
 }

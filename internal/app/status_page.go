@@ -254,9 +254,9 @@ const statusPageHTML = `<!doctype html>
     .stat-value.unknown { color: var(--unknown); }
 
     .grid {
-      display: grid;
+      display: flex;
+      flex-direction: column;
       gap: 1.25rem;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       margin-top: 0;
     }
     .card {
@@ -267,6 +267,8 @@ const statusPageHTML = `<!doctype html>
       position: relative;
       overflow: hidden;
       animation: fadeUp 0.6s ease both;
+      display: flex;
+      flex-direction: column;
     }
     [data-theme="light"] .card {
       background: rgba(255, 255, 255, 0.9);
@@ -366,9 +368,9 @@ const statusPageHTML = `<!doctype html>
     }
     .incident-top {
       display: flex;
+      flex-direction: column;
       align-items: flex-start;
-      justify-content: space-between;
-      gap: 1rem;
+      gap: 0.35rem;
     }
     .incident-title {
       font-weight: 600;
