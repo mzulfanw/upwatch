@@ -11,16 +11,21 @@ Minimal uptime monitor with a public status page, admin dashboard, incidents, an
 - SQLite storage (easy to run anywhere)
 - SSE stream for real-time status updates
 
-## Quick start (local)
+## Quick start (Docker)
 ```bash
-go run ./cmd
+docker pull mzulfanw/upwatch:latest
+docker run -d \
+  -e ADMIN_USER=admin \
+  -e ADMIN_PASSWORD=admin \
+  -p 8080:8080 \
+  mzulfanw/upwatch:latest
 ```
 
 Default port is `8080`. Open:
 - `http://localhost:8080/` (public status)
 - `http://localhost:8080/login` (admin login)
 
-## Docker
+## Docker (build locally)
 ```bash
 docker build -t upwatch .
 docker run -d \
@@ -63,7 +68,12 @@ docker run -d \
   -v $(pwd)/data:/data \
   -e DB_PATH=/data/upwatch.db \
   -p 8080:8080 \
-  upwatch
+  mzulfanw/upwatch:latest
+```
+
+## Local development (optional)
+```bash
+go run ./cmd
 ```
 
 ## Notes
